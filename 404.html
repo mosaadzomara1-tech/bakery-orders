@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>طلبات الجملة — مخابز التفاح الأخضر</title>
+<meta name="description" content="اطلب خبزك اليومي بالجملة من جوالك: طلب ثابت أسبوعي، أسعارك الخاصة، والفواتير وكشف الحساب في مكان واحد.">
+<meta property="og:title" content="طلبات الجملة — مخابز التفاح الأخضر">
+<meta property="og:description" content="للكافيهات والمطاعم والبقالات: اطلب وعدّل طلبك قبل ساعة الإغلاق من جوالك.">
+<meta name="theme-color" content="#8a4b1c">
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg:#faf6f0; --card:#fff; --ink:#2b1d12; --muted:#7a6a5c; --brand:#8a4b1c; --brand2:#b8742e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1511; --card:#261c16; --ink:#f3e9df; --muted:#b9a797; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
+         background:var(--bg); color:var(--ink);
+         font:16px/1.7 system-ui, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif; }
+  .card { width:100%; max-width:380px; background:var(--card); border-radius:22px; padding:32px 24px;
+          text-align:center; box-shadow:0 10px 40px rgba(60,30,10,.10); }
+  .logo { width:72px; height:72px; margin:0 auto 14px; border-radius:20px; display:grid; place-items:center;
+          background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; font-size:36px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p { margin:0; color:var(--muted); font-size:14px; }
+  .bar { height:4px; border-radius:4px; background:rgba(138,75,28,.15); overflow:hidden; margin:22px 0 6px; }
+  .bar span { display:block; height:100%; width:40%; background:var(--brand); border-radius:4px;
+              animation:slide 1.1s ease-in-out infinite; }
+  @keyframes slide { from { transform:translateX(160%); } to { transform:translateX(-260%); } }
+  @media (prefers-reduced-motion: reduce) { .bar span { animation:none; width:100%; } }
+  .err { display:none; margin-top:18px; }
+  .err a { display:inline-block; margin-top:10px; padding:10px 18px; border-radius:12px; background:var(--brand);
+           color:#fff; text-decoration:none; font-weight:600; }
+  .fail .bar { display:none; } .fail .err { display:block; }
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <div class="logo" aria-hidden="true">🥖</div>
+  <h1>طلبات الجملة</h1>
+  <p>مخابز التفاح الأخضر</p>
+  <div class="bar" role="progressbar" aria-label="جاري الفتح"><span></span></div>
+  <p id="msg">جاري فتح صفحة الطلبات…</p>
+  <div class="err"><p>الخدمة مش متاحة دلوقتي — جرّب بعد دقيقة.</p><a href="" id="retry">إعادة المحاولة</a></div>
+</main>
+<script>
+// لينك ثابت: عنوان السيرفر بيتغيّر، وconfig.json بيتحدّث لوحده من جهاز المخبز.
+// أي مسار بعد /bakery-orders/ بيتنقل زي ما هو (روابط رسايل واتساب)، والصفحة الرئيسية = بوابة العملاء.
+(async function () {
+  const base = '/bakery-orders';
+  let rest = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : location.pathname;
+  if (rest === '' || rest === '/' || rest === '/index.html' || rest === '/404.html') rest = '';
+  for (let i = 0; i < 3; i++) {
+    try {
+      const c = await (await fetch(base + '/config.json?t=' + Date.now(), { cache: 'no-store' })).json();
+      const server = String(c.server || '').replace(/\/+$/, '');
+      if (!/^https:\/\/[a-z0-9.-]+$/i.test(server)) throw new Error('bad server');
+      const path = rest || '/b/' + encodeURIComponent(c.slug || 'greenapple') + '/';
+      location.replace(server + path + location.search + location.hash);
+      return;
+    } catch (e) { await new Promise(r => setTimeout(r, 1500)); }
+  }
+  document.getElementById('card').classList.add('fail');
+  document.getElementById('msg').textContent = '';
+  document.getElementById('retry').href = location.href;
+})();
+</script>
+</body>
+</html>
