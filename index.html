@@ -49,15 +49,26 @@
   const base = '/bakery-orders';
   let rest = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : location.pathname;
   if (rest === '' || rest === '/' || rest === '/index.html' || rest === '/404.html') rest = '';
-  for (let i = 0; i < 3; i++) {
+  // بنتأكد إن السيرفر بيرد قبل التحويل: بعد ريستارت الجهاز العنوان بيتغيّر والصفحة دي بتاخد دقيقة تتحدّث،
+  // فبدل ما العميل يقع على صفحة خطأ بنستنى ونعيد المحاولة لحد ٣ دقايق.
+  const msg = document.getElementById('msg');
+  const started = Date.now();
+  for (let i = 0; Date.now() - started < 180000; i++) {
     try {
       const c = await (await fetch(base + '/config.json?t=' + Date.now(), { cache: 'no-store' })).json();
       const server = String(c.server || '').replace(/\/+$/, '');
       if (!/^https:\/\/[a-z0-9.-]+$/i.test(server)) throw new Error('bad server');
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 6000);
+      const h = await fetch(server + '/healthz?t=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+      if (!h.ok) throw new Error('down');
       const path = rest || '/b/' + encodeURIComponent(c.slug || 'greenapple') + '/';
       location.replace(server + path + location.search + location.hash);
       return;
-    } catch (e) { await new Promise(r => setTimeout(r, 1500)); }
+    } catch (e) {
+      if (i === 1) msg.textContent = 'جاري التحديث… ثواني وهيفتح لوحده';
+      await new Promise(r => setTimeout(r, 4000));
+    }
   }
   document.getElementById('card').classList.add('fail');
   document.getElementById('msg').textContent = '';
